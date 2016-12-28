@@ -137,7 +137,7 @@
    function eval_(&$ast=array(),$pos=0,$scope=null){
      //print_r($scope);
      if (is_array($ast[$pos])){
-       return $this->eval_($ast[$pos],$pos,$scope);
+       return $this->eval_($ast[$pos],0,$scope);
      }else{
         
         $cmd = $ast[$pos];
@@ -279,6 +279,28 @@
     }
 
 
+    function minus(){
+
+    	$args = func_get_args();
+
+    	$scope = $args[0];
+    	$args = array_splice($args, 1);    	
+
+    	//print_r($args);
+
+    	$sum = $this->lisp->eval_($args,0,$scope) * 2;
+
+    	foreach ($args as $k=>$v){
+    		//echo $this->lisp->eval_($v,0) . '<br />'; 
+          $sum-=$this->lisp->eval_($v,0,$scope);
+    	}
+
+    	return $sum;
+
+    }
+
+
+
     function mult(){
 
     	$args = func_get_args();
@@ -357,7 +379,7 @@
     	}
     	
     	//print_r($r);
-    	$out = implode(' , ', $r);
+    	$out =  implode(' , ', $r) . '<br />';
 
     	echo $out;
  
@@ -377,6 +399,45 @@
     	$this->add_user_defined($args[0],$args[1],$args[2]);
 
     }
+
+    function iff(){
+    	$args = func_get_args();
+
+    	$scope = $args[0];
+    	$args = array_splice($args, 1);
+
+    	//print_r($args);
+
+    	if ($this->lisp->eval_($args,0,$scope)){
+          return $this->lisp->eval_($args,1,$scope);
+    	}else{
+          return $this->lisp->eval_($args,2,$scope);
+    	}
+
+    }
+
+
+    function _eq_(){
+    	$args = func_get_args();
+
+    	$scope = $args[0];
+    	$args = array_splice($args, 1);
+    	// print_r($args);
+    	// echo $this->lisp->eval_($args,0,$scope) . '<br />';
+    	// echo $this->lisp->eval_($args,1,$scope) . '<br />';
+    	return ($this->lisp->eval_($args,0,$scope) == $this->lisp->eval_($args,1,$scope));
+
+    }
+
+    function _neq_(){
+    	$args = func_get_args();
+
+    	$scope = $args[0];
+    	$args = array_splice($args, 1);
+    	return ($this->lisp->eval_($args,0,$scope) != $this->lisp->eval_($args,1,$scope));
+
+    }
+
 
 
 
