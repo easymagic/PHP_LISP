@@ -158,7 +158,7 @@
 
               $code = $this->libs->get_user_defined($cmd);
               $sub_args = $code['args'];
-              $sub_scope = new Scope();
+              $sub_scope = new Scope($scope);
               foreach ($sub_args as $k=>$v){
                  $sub_scope->set($v,$this->eval_($args,$k,$scope)); //interprete variables at the root scope being passed as parameter to the function.
               }
@@ -195,6 +195,19 @@
 
    private $data = array();
 
+   function __construct($scp=null){
+     if ($scp != null){
+       $this->_copy($scp);
+     }
+   }
+
+
+   function _copy($scp){
+   	$prp = $scp->all();
+     foreach ($prp as $k=>$v){
+       $this->data[$k] = $v;
+     }
+   }
 
 
    function set($name,$v){
@@ -203,6 +216,10 @@
 
    function get($name){
      return $this->data[$name];
+   }
+
+   function all(){
+   	return $this->data;
    }
 
    function has_key($name){
