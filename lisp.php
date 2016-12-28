@@ -81,7 +81,7 @@
      $this->set_code($code);
      $this->parse($ast,null);
      //print_r($ast);
-     $this->eval_($ast,0);
+     $this->eval_($ast,0,(new Scope()));
 
    }
 
@@ -134,25 +134,36 @@
 
    }
 
-   function eval_(&$ast=array(),$pos=0){
-     
+   function eval_(&$ast=array(),$pos=0,$scope=null){
+     //print_r($scope);
      if (is_array($ast[$pos])){
-       return $this->eval_($ast[$pos]);
+       return $this->eval_($ast[$pos],$pos,$scope);
      }else{
         
         $cmd = $ast[$pos];
         //echo $ast . '<br />';
-        $args = array_slice($ast, 1);
         // echo $cmd;
         // echo $ast;
 
         if ($this->libs->has_cmd($cmd)){//check for native functions here
+	        $args = array_slice($ast, 1);
+            array_unshift($args, $scope);
         	return call_user_func_array(array($this->libs,$cmd), $args);		          
         }else{
         	if ($this->libs->is_user_defined($cmd)){ //check for user defined functions here
+	        
+	          $args = array_slice($ast, 1);
+	          //print_r($args);
+              //array_unshift($args, $scope);        		
+
               $code = $this->libs->get_user_defined($cmd);
+              $sub_args = $code['args'];
+              $sub_scope = new Scope();
+              foreach ($sub_args as $k=>$v){
+                 $sub_scope->set($v,$this->eval_($args,$k,$scope)); //interprete variables at the root scope being passed as parameter to the function.
+              }
               //print_r($code);
-              return $this->eval_($code['block'],0);
+              return $this->eval_($code['block'],0,$sub_scope);
         	}else{
              
         	//interpolate ast to p
@@ -162,8 +173,8 @@
               $p = $ast;
         	}
 
-	        	if ($this->scope->has_key($p)){
-	               return $this->scope->get($p); //return interpreted variable
+	        	if ($scope->has_key($p)){
+	               return $scope->get($p); //return interpreted variable
 	        	}else{
 	               return $p; //return constant here ...
 	        	}
@@ -234,13 +245,16 @@
 
     	$args = func_get_args();
 
+    	$scope = $args[0];
+    	$args = array_splice($args, 1);    	
+
     	//print_r($args);
 
     	$sum = 0;
 
     	foreach ($args as $k=>$v){
     		//echo $this->lisp->eval_($v,0) . '<br />'; 
-          $sum+=$this->lisp->eval_($v,0);
+          $sum+=$this->lisp->eval_($v,0,$scope);
     	}
 
     	return $sum;
@@ -251,11 +265,16 @@
     function mult(){
 
     	$args = func_get_args();
+    	$scope = $args[0];
+    	$args = array_splice($args, 1);
+
+    	//print_r($args);
 
     	$mult = 1;
 
     	foreach ($args as $k=>$v){
-          $mult*=$this->lisp->eval_($v,0);
+    		//echo $this->lisp->eval_($v,0,$scope) . '<br />';
+          $mult*=$this->lisp->eval_($v,0,$scope);
     	}
 
     	return $mult;
@@ -268,12 +287,16 @@
 
     	$args = func_get_args();
 
+    	$scope = $args[0];
+    	$args = array_splice($args, 1);
+
+
     	$k = $args[0];
-    	$v = $this->lisp->eval_($args[1],0);
+    	$v = $this->lisp->eval_($args[1],0,$scope);
 
-    	$this->lisp->get_scope()->set($k,$v);
+    	$scope->set($k,$v);
 
-    	return $this->lisp->get_scope()->get($k);
+    	return $scope->get($k);
     	
     }
 
@@ -281,13 +304,17 @@
     	
     	$args = func_get_args();
 
+    	$scope = $args[0];
+    	$args = array_splice($args, 1);
+
+
     	//print_r($args);
 
     	$r = null;
 
     	foreach ($args as $k=>$v){
 
-    		$r = $this->lisp->eval_($v,0);
+    		$r = $this->lisp->eval_($v,0,$scope);
 
     		//echo $r;
 
@@ -301,11 +328,15 @@
 
     function out(){
     	$args = func_get_args();
+
+    	$scope = $args[0];
+    	$args = array_splice($args, 1);
+
     	$r = array();
     	
     	foreach ($args as $k=>$v){
     		//print_r($v);
-           $r[] = $this->lisp->eval_($v,0);
+           $r[] = $this->lisp->eval_($v,0,$scope);
     	}
     	
     	//print_r($r);
@@ -318,9 +349,13 @@
     }
 
 
-    function defn(){
+    function defn(){    	
     	
     	$args = func_get_args();
+
+    	$scope = $args[0];
+    	$args = array_splice($args, 1);
+
     	//print_r($args);
     	$this->add_user_defined($args[0],$args[1],$args[2]);
 
